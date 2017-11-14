@@ -27,4 +27,14 @@ if you want to clean it.
 
 ## Demo
 
-![data](SuMC/demo/orig_data.gif)
+In folder [SuMC/demo/](https://github.com/struski2/SuMC/tree/master/demo) I putted sample data together [results](https://github.com/struski2/SuMC/tree/master/demo/res) of SuMC method. The following image presents dataset, which are consisted 5 (with three 2-dimensional and two 1-dimensional subspaces) subspaces.
+
+<p align="center">
+<img src="https://github.com/struski2/SuMC/blob/master/demo/orig_data.gif" width="500" height="500" />
+</p>
+
+#### How to run SuMC on this data?
+```
+./SuMC -i SuMC/demo/data.txt -k 5 -t 10 -c 0.66 -o SuMC/demo/res/
+```
+
