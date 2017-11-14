@@ -23,6 +23,8 @@ You run
 ```
 /home/lukasz/clion/bin/cmake/bin/cmake --build ./build/ --target clean -- -j 2
 ```
-if you want to clean.
+if you want to clean it.
 
 ## Demo
+
+![data](SuMC/demo/orig_data.gif)
