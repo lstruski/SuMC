@@ -21,7 +21,7 @@ cmake --build ./build/ --target SuMC -- -j 2
 ```
 You run 
 ```
-/home/lukasz/clion/bin/cmake/bin/cmake --build ./build/ --target clean -- -j 2
+cmake --build ./build/ --target clean -- -j 2
 ```
 if you want to clean it.
 
