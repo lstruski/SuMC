@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.8)
 project(SuMC)
 
 #set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -m64 -O2 -std=c++11")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -m64 -O3 -std=c++11")
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -m64 -O2 -std=c++11")
 
 find_package(BLAS REQUIRED)
