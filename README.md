@@ -13,7 +13,7 @@ Go to directory [SuMC/SuMC/](https://github.com/struski2/SuMC/tree/master/SuMC) 
 mkdir build
 cd build
 
-cmake -DCMAKE_BUILD_TYPE=Debug -G "CodeBlocks - Unix Makefiles" ..
+cmake -DCMAKE_BUILD_TYPE=Release -G "CodeBlocks - Unix Makefiles" ..
 
 cd ..
 
