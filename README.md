@@ -1,5 +1,7 @@
 # SuMC
 
+Implementation of method from paper ''[*Lossy compression approach to subspace clustering*](https://www.sciencedirect.com/science/article/pii/S0020025516311628
+)''.
 ## Requirements:
 * cmake (3.8 or higher),
 * gcc, g++ (5.4.0 or higher),
