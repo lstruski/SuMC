@@ -119,28 +119,28 @@ double Cluster::getDim() const {
 }
 
 /**
- * @return mean of Claster
+ * @return mean of Cluster
  */
 double *Cluster::getMean() const {
     return this->mean;
 }
 
 /**
- * @return cov of Claster
+ * @return cov of Cluster
  */
 double *Cluster::getCov() const {
     return this->cov;
 }
 
 /**
- * @return weight of Claster
+ * @return weight of Cluster
  */
 int Cluster::getWeight() const {
     return this->weight;
 }
 
 /**
- * @return memory of Claster
+ * @return memory of Cluster
  */
 double Cluster::getMemory() const {
     return this->memory;
