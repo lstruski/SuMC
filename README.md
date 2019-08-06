@@ -37,6 +37,15 @@ In folder [SuMC/demo/](https://github.com/struski2/SuMC/tree/master/demo) I putt
 
 #### How to run SuMC on this data?
 ```
-./SuMC -i SuMC/demo/data.txt -k 5 -t 10 -c 0.66 -o SuMC/demo/res/
+./SuMC -i SuMC/demo/data.txt -k 5 -t 10 -c 0.5835 -o SuMC/demo/res/
 ```
+
+Legend of command line interpreter:
+--input -i:          Input file
+--delimiter -d:      The char used to separate values
+--k -k:              Number of clusters
+--comp_ratio -c:     Compression ratio
+--iters -t:          Number of iterations
+--bits -b:           Number of bits
+--output -o:         Path to output directory
 

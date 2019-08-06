@@ -1,9 +1,10 @@
-cmake_minimum_required(VERSION 3.8)
+cmake_minimum_required(VERSION 3.14)
 project(SuMC)
 
-#set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -m64 -O3 -std=c++11")
-#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -m64 -O2 -std=c++11")
+set(CMAKE_CXX_STANDARD 14)
+
+#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -m64 -O2 -std=c++14")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -m64 -O3 -std=c++14 -pthread")
 
 find_package(BLAS REQUIRED)
 if (BLAS_FOUND)
@@ -23,6 +24,9 @@ endif (LAPACK_FOUND)
 
 find_library(LAPACKE_LIB lapacke /usr/lib/)
 
-set(SOURCE_FILES ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES} main.cpp Cluster.cpp ContainerClusters.cpp lapackFunctions.cpp subspaceClustering.h)
+#set(CMAKE_BUILD_TYPE Release)
+set(SOURCE_FILES ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES} main.cpp cluster.cpp containerClusters.cpp lapackFunctions.cpp subspaceClustering.h)
+#set(SOURCE_FILES ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES} main_test.cpp cluster.cpp containerClusters.cpp lapackFunctions.cpp subspaceClustering.h)
 add_executable(SuMC ${SOURCE_FILES})
-target_link_libraries(SuMC ${BLAS_LIBRARIES}; ${LAPACK_LIBRARIES}; ${LAPACKE_LIB})
+#target_link_libraries(SuMC ${BLAS_LIBRARIES}; ${LAPACK_LIBRARIES}; ${LAPACKE_LIB})
+target_link_libraries(SuMC ${BLAS_LIBRARIES}; ${LAPACK_LIBRARIES}; ${LAPACKE_LIB}; pthread)

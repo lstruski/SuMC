@@ -4,9 +4,9 @@
 
 #include "subspaceClustering.h"
 
-/** 
+/**
  * update covariance matrix C := alpha*x**T*x + beta*C
- * 
+ *
  * @param n (<i><b>int</i></b>) - size of symmetric matrix
  * @param C (<i><b>double*</i></b>) - symmetric matrix
  * @param point (<i><b>double*</i></b>) - vector, which update matrix
@@ -21,7 +21,7 @@ void updateCOV(int n, double *C, double *point, double alpha, double beta) {
 
 /**
  * calculate all eigenvalues and optional eigenvectors
- * 
+ *
  * @param dim (<i><b>int</i></b>) - size of symmetric matrix n x n
  * @param n_select (<i><b>int</i></b>) - if n_select>0 then calculate number of smallest eigenvalues; otherwise n_select largest eigenvalues to be returned
  * @param A (<i><b>double*</i></b>) - symmetric matrix
@@ -31,8 +31,8 @@ void updateCOV(int n, double *C, double *point, double alpha, double beta) {
  */
 int
 eigensystem(int dim, int n_select, double *A, double *eigenvalues, double *eigenvectors, bool calculateEigenvectors) {
-    int n = dim, il, iu, m, lda = dim, ldz = n_select, info;
-    double abstol, vl, vu;
+    int n = dim, il = 0, iu = 0, m, lda = dim, ldz = n_select, info;
+    double abstol, vl = 0, vu = 0;
     char jobz = 'N', range = 'I';
     /*
      jobz
@@ -47,7 +47,7 @@ eigensystem(int dim, int n_select, double *A, double *eigenvalues, double *eigen
      */
 
     /* Local arrays */
-    int *isuppz;
+    int *isuppz = nullptr;
 
     if (n_select == dim)
         range = 'A';

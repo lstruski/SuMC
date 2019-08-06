@@ -12,25 +12,29 @@
 
 using namespace std;
 using namespace subspaceClustering;
+
 std::string inputfile, outputDir = "../results_SuMC/";
-size_t k = 10, iters = 5, bits = 0;
+char delimiter = ' ';
+int k = 10, iters = 5, bits = 0;
 double comp_ratio;
 
 void PrintHelp() {
     std::cout <<
               "--input -i:          Input file\n"
-                      "--k -k:              Number of clusters\n"
-                      "--comp_ratio -c      Compression ratio\n"
-                      "--iters -t:         Number of iterations\n"
-                      "--bits -b:           Number of bits\n"
-                      "--output -o:         Path to output directory\n";
+              "--delimiter -d:      The char used to separate values\n"
+              "--k -k:              Number of clusters\n"
+              "--comp_ratio -c:     Compression ratio\n"
+              "--iters -t:          Number of iterations\n"
+              "--bits -b:           Number of bits\n"
+              "--output -o:         Path to output directory\n";
     exit(1);
 }
 
 void ProcessArgs(int argc, char **argv) {
-    const char *const short_opts = "i:k:c:t:b:o:h";
+    const char *const short_opts = "i:d:k:c:t:b:o:h";
     const option long_opts[] = {
             {"input",      1, nullptr, 'i'},
+            {"delimiter",  1, nullptr, 'd'},
             {"k",          1, nullptr, 'k'},
             {"comp_ratio", 1, nullptr, 'c'},
             {"iters",      0, nullptr, 't'},
@@ -50,6 +54,11 @@ void ProcessArgs(int argc, char **argv) {
             case 'i':
                 inputfile = std::string(optarg);
                 std::cout << "Input file: " << inputfile << std::endl;
+                break;
+
+            case 'd':
+                delimiter = *optarg;
+                std::cout << "Delimiter: " << delimiter << std::endl;
                 break;
 
             case 'k':
@@ -105,10 +114,10 @@ int main(int argc, char **argv) {
     std::chrono::duration<double> elapsed;
 
     ContainerClusters c;
-    size_t size[2];
+    int size[2];
 
-    double *data = readData(inputfile, *size, *(size + 1)); // n_samples = size[0], dim = size[1]
-    auto *grups = new size_t[size[0]];
+    double *data = readData(inputfile, *size, *(size + 1), delimiter); // n_samples = size[0], dim = size[1]
+    auto *grups = new int[size[0]];
 
     double p_Memory;
 
@@ -161,8 +170,8 @@ int main(int argc, char **argv) {
 
         double bladSreKwad = 0.0;
 
-        for (size_t i = 0; i < size[0]; i++)
-            for (size_t j = 0; j < size[1]; j++)
+        for (int i = 0; i < size[0]; i++)
+            for (int j = 0; j < size[1]; j++)
                 bladSreKwad += pow(abs(data[i * size[1] + j] - c.getContainer()[grups[i]]->getMean()[j]), 2);
 
         cout << " Cost function: " << c.getError() / size[0] << "\t" << c.getError() / bladSreKwad << "\n";

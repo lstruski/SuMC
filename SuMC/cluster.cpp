@@ -17,10 +17,67 @@ void copy_vec(const int dim, const double *x, double *y) {
     cblas_dcopy(dim, x, 1, y, 1);
 }
 
+void data_param(std::string filename, int &n_samples, int &dim, const char separator) {
+    std::ifstream in(filename, std::ios::in);
+    std::string line;
+    n_samples = 0;
+
+    if (!in) {
+        std::cout << "Cannot open input file.\n";
+        exit(1);
+    }
+
+    std::getline(in, line);
+    dim = (int) std::count(line.begin(), line.end(), separator);
+    ++dim;
+    ++n_samples;
+    while (std::getline(in, line))
+        ++n_samples;
+
+    in.clear();
+    in.close();
+
+    if (!in.good()) {
+        std::cout << "A file error occurred.\n";
+        exit(1);
+    }
+}
+
+
+void readfile(double *data, std::string filename, char separator) {
+    std::ifstream in(filename, std::ios::in);
+    std::string line, item;
+    int i;
+
+    if (!in) {
+        std::cout << "Cannot open input file.\n";
+        exit(1);
+    }
+
+    i = 0;
+    std::stringstream linestream;
+    while (std::getline(in, line)) {
+        linestream << line;
+        while (std::getline(linestream, item, separator))
+            if (line.length() > 0)
+                data[i++] = std::stod(item);
+        linestream.clear();
+    }
+
+    in.clear();
+    in.close();
+
+    if (!in.good()) {
+        std::cout << "A file error occurred.\n";
+        exit(1);
+    }
+}
+
+
 /*
  * This function reads data from file.
  */
-double *readData(std::string filename, size_t &n_samples, size_t &dim, const char separator) {
+double *readData(std::string filename, int &n_samples, int &dim, const char separator) {
     std::ifstream in(filename, std::ios::in);
     std::string line, item;
     double *data;
@@ -45,11 +102,13 @@ double *readData(std::string filename, size_t &n_samples, size_t &dim, const cha
 
     i = 0;
     data = new double[n_samples * dim];
+    std::stringstream linestream;
     while (std::getline(in, line)) {
-        std::stringstream linestream(line);
+        linestream << line;
         while (std::getline(linestream, item, separator))
             if (line.length() > 0)
                 data[i++] = std::stod(item);
+        linestream.clear();
     }
 
     in.clear();
@@ -63,20 +122,20 @@ double *readData(std::string filename, size_t &n_samples, size_t &dim, const cha
 }
 
 
-size_t Cluster::N;
+int Cluster::N;
 
 /**
- * @param N (<i><b>size_t</b></i>) - size of cluster (what dimension are the data represented)
+ * @param N (<i><b>int</b></i>) - size of cluster (what dimension are the data represented)
  */
-Cluster::Cluster(size_t N) {
+Cluster::Cluster(int N) {
     Cluster::N = N;
     this->dim = 0.0;
     this->mean = new double[this->N];
     this->eigenvalues = new double[this->N];
     this->cov = new double[this->N * this->N];
-    for (size_t i = 0; i < this->N; i++) {
+    for (int i = 0; i < this->N; i++) {
         this->mean[i] = 0;
-        for (size_t j = 0; j < this->N; j++)
+        for (int j = 0; j < this->N; j++)
             this->cov[i * this->N + j] = 0;
     }
     this->weight = 0;
@@ -92,10 +151,10 @@ Cluster::Cluster(const Cluster &orig) {
     this->mean = new double[this->N];
     this->eigenvalues = new double[this->N];
     this->cov = new double[this->N * this->N];
-    for (size_t i = 0; i < orig.N; i++) {
+    for (int i = 0; i < orig.N; i++) {
         this->mean[i] = orig.mean[i];
         this->eigenvalues[i] = orig.eigenvalues[i];
-        for (size_t j = 0; j < orig.N; j++)
+        for (int j = 0; j < orig.N; j++)
             this->cov[i * orig.N + j] = orig.cov[i * orig.N + j];
     }
     this->weight = orig.weight;
@@ -133,6 +192,13 @@ double *Cluster::getCov() const {
 }
 
 /**
+ * @return eigenvalues of Cluster
+ */
+double *Cluster::getEigenvalues() const {
+    return this->eigenvalues;
+}
+
+/**
  * @return weight of Cluster
  */
 int Cluster::getWeight() const {
@@ -158,7 +224,7 @@ void Cluster::changePoint(const double *point, const int weightPoint, double *te
     pu = (double) this->weight / (this->weight + weightPoint);
     pv = (double) weightPoint / (this->weight + weightPoint);
 
-    for (size_t i = 0; i < this->N; i++) {
+    for (int i = 0; i < this->N; i++) {
         temp[i] = point[i] - this->mean[i];
         this->mean[i] = pu * this->mean[i] + pv * point[i];
     }
@@ -175,8 +241,8 @@ void Cluster::changePoint(const double *point, const int weightPoint, double *te
  * @param point (<i><b>double*</i></b>) - the coordinates of the point to be compressed
  */
 void Cluster::compression(double *point) const {
-    double *temp = new double[this->N];
-    size_t i, j, n_select = this->N - (int) std::floor(this->dim);
+    auto *temp = new double[this->N];
+    int i, j, n_select = this->N - (int) std::floor(this->dim);
 
     double s = 0.0;
     for (i = 0; i < this->N; i++) {
@@ -215,10 +281,10 @@ Cluster &Cluster::operator=(const Cluster &orig) {
     try {
         if (this->N != orig.N) throw "Those clusters have different size!!!";
         this->dim = orig.dim;
-        for (size_t i = 0; i < orig.N; i++) {
+        for (int i = 0; i < orig.N; i++) {
             this->mean[i] = orig.mean[i];
             this->eigenvalues[i] = orig.eigenvalues[i];
-            for (size_t j = 0; j < N; j++)
+            for (int j = 0; j < N; j++)
                 this->cov[i * orig.N + j] = orig.cov[i * orig.N + j];
         }
         this->weight = orig.weight;
@@ -237,12 +303,21 @@ double Cluster::err(const double factor) const {
     double s = 0.0;
     if (factor >= (double) this->N) return s;
     else if (factor <= std::numeric_limits<double>::epsilon()) {
-        for (size_t i = 0; i < this->N; i++)
-            s += this->eigenvalues[i];
-    } else {
-        for (size_t i = 0; i < this->N - std::ceil(factor); i++)
+        for (int i = 0; i < this->N; i++)
+            s += this->cov[i * this->N + i];
+    } else if (factor > this->N / 2) {
+        for (int i = 0; i < this->N - std::ceil(factor); i++)
             s += this->eigenvalues[i];
         s += (std::ceil(factor) - factor) * this->eigenvalues[(int) (this->N - 1 - std::floor(factor))];
+    } else {
+        for (int i = 0; i < this->N; i++)
+            s += this->cov[i * this->N + i];
+        for (int i = this->N - std::floor(factor); i < this->N; i++)
+            s -= this->eigenvalues[i];
+        s -= (factor - std::floor(factor)) * this->eigenvalues[(int) (this->N - 1 - std::floor(factor))];
+//        for (int i = 1; i < static_cast<int>(floor(factor) + 1); i++)
+//            s -= this->eigenvalues[i];
+//        s -= (factor - std::floor(factor)) * this->eigenvalues[0];
     }
     return s;
 }
@@ -251,10 +326,10 @@ double Cluster::err(const double factor) const {
  * Cost function
  *
  * @param totalWeight (<i><b>int</i></b>) - the total number of data
- * @param bits (<i><b>size_t</i></b>) - number of bits needed to memorize one scalar
+ * @param bits (<i><b>int</i></b>) - number of bits needed to memorize one scalar
  * @return cost function for one cluster
  */
-double Cluster::errorFUN(const int totalWeight, const size_t bits) const {
+double Cluster::errorFUN(const int totalWeight, const int bits) const {
     double factor;
     if (bits == 0)
         factor = this->memory / this->weight;
@@ -282,7 +357,7 @@ bool Cluster::unassign(const int totalWeight, const double toleranceFactor) cons
  * @return Prints cluster data: dimension, memory, weight, center, covariance matrix
  */
 std::ostream &subspaceClustering::operator<<(std::ostream &out, const Cluster &c) {
-    size_t i, j;
+    int i, j;
     out << "\nDim:\t" << c.dim;
     out << "\nMemory:\t" << c.memory;
     out << "\nWeight:\t" << c.weight;
@@ -302,9 +377,9 @@ std::ostream &subspaceClustering::operator<<(std::ostream &out, const Cluster &c
         out << "\n";
     }
 
-    out << "\nEigenvalues: ";
-    for (i = 0; i < c.N; i++)
-        out << c.eigenvalues[i] << ", ";
-    out << "\n";
+//    out << "\nEigenvalues: ";
+//    for (i = 0; i < c.N; i++)
+//        out << c.eigenvalues[i] << ", ";
+//    out << "\n";
     return out;
 }

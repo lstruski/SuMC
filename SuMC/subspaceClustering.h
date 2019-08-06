@@ -1,57 +1,13 @@
 //
-// Created by lukasz on 12.11.17.
+// Created by lukasz struski on 12.11.17.
 //
 
-#ifndef SUMC_SUBSPACECLUSTERING_H_H
-#define SUMC_SUBSPACECLUSTERING_H_H
-
+#ifndef SOURCE_SUBSPACECLUSTERING_H
+#define SOURCE_SUBSPACECLUSTERING_H
 
 #include <vector>
 #include <lapacke.h>
 #include <cblas.h>
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-/*
- * DCOPY copies a vector 'x' to a vector 'y'.
- */
-void cblas_dcopy(const int N, const double *X, const int incX, double *Y, const int incY);
-
-
-/*
- * DSYRK  performs one of the symmetric rank k operations
- *     C := alpha*A*A**T + beta*C,
- * or
- *     C := alpha*A**T*A + beta*C,
- * where  alpha and beta  are scalars, C is an  n by n  symmetric matrix
- * and  A  is an  n by k  matrix in the first case and a  k by n  matrix
- * in the second case.
- */
-void cblas_dsyrk(CBLAS_LAYOUT layout, CBLAS_UPLO Uplo,
-                 CBLAS_TRANSPOSE Trans, const int N, const int K,
-                 const double alpha, const double *A, const int lda,
-                 const double beta, double *C, const int ldc);
-
-/*
- * computes all eigenvalues and, optionally,
- * eigenvectors of a real symmetric matrix A.
- */
-lapack_int LAPACKE_dsyevr(int matrix_order, char jobz, char range, char uplo,
-                          lapack_int n, double *a, lapack_int lda, double vl, double vu,
-                          lapack_int il, lapack_int iu, double abstol, lapack_int *m,
-                          double *w, double *z, lapack_int ldz, lapack_int *isuppz);
-
-lapack_int LAPACKE_dsyevx(int matrix_layout, char jobz, char range, char uplo,
-                          lapack_int n, double *a, lapack_int lda, double vl,
-                          double vu, lapack_int il, lapack_int iu,
-                          double abstol, lapack_int *m, double *w, double *z,
-                          lapack_int ldz, lapack_int *ifail);
-
-#ifdef __cplusplus
-}
-#endif
 
 
 /*
@@ -67,14 +23,19 @@ int eigensystem(int dim, int n_select, double *A, double *eigenvalues,
 /*
  * This function copies a vector 'x' to a vector 'y'.
  */
-void copy_vec(const int dim, const double *x, double *y);
+void copy_vec(int dim, const double *x, double *y);
 
-double *readData(std::string filename, size_t &n_samples, size_t &dim, const char separator = ' ');
+void data_param(std::string filename, int &n_samples, int &dim, char separator = ',');
+
+void readfile(double *data, std::string filename, char separator = ',');
+
+double *readData(std::string filename, int &n_samples, int &dim, char separator = ',');
 
 /**
  *
  */
 namespace subspaceClustering {
+    const int bound = 2;
 
     class Cluster;
 
@@ -83,7 +44,7 @@ namespace subspaceClustering {
      *
      */
     class ContainerClusters {
-        size_t size;
+        int size;
         double error;
         std::vector<Cluster *> tableClusters;
 
@@ -92,9 +53,11 @@ namespace subspaceClustering {
 
         ContainerClusters(const ContainerClusters &orig);
 
+        ContainerClusters &operator=(const ContainerClusters &orig);
+
         virtual ~ContainerClusters();
 
-        size_t getSize() const;
+        int getSize() const;
 
         double getError() const;
 
@@ -104,29 +67,30 @@ namespace subspaceClustering {
 
         void clean();
 
-        ContainerClusters &operator=(const ContainerClusters &orig);
+        void stepHartigan(int *grups, std::vector<int> &activeClusters, const int size[], const double *data,
+                          double allMemory, int bits = 0);
 
-        void stepHartigan(size_t *grups, std::vector<size_t> &activeClusters, const size_t size[], const double *data,
-                          const double allMemory, const size_t bits = 0);
+        void Hartigan(int *grups, const int size[], const double *data, int howClusters,
+                      double allMemory, int iteration = 5, int bits = 0);
 
-        void Hartigan(size_t *grups, const size_t size[], const double *data, const size_t howClusters,
-                      const double allMemory, const size_t iteration = 5, const size_t bits = 0);
+        void Hartigan_parallel(int *group, const int size[], const double *data, unsigned int howClusters,
+                               double allMemory, unsigned int n_threads, int iteration = 5, int bits = 0);
 
-        void compression(double *data, const size_t size[], const size_t *grups);
+        void compression(double *data, const int size[], const int *grups);
 
-        void run(double *data, size_t *grups, const size_t size[], const size_t howClusters,
-                 const double degreeOfCompression, const size_t iteration = 5, const size_t bits = 0);
+        void run(double *data, int *grups, const int size[], int howClusters,
+                 double degreeOfCompression, int iteration = 5, int bits = 0);
 
 
-    private:
-        void createCluster(const size_t size[], const double *data, const size_t *grups, const size_t howClusters,
-                           const double allMemory, const size_t bits);
+//    private:
+        void createCluster(const int size[], const double *data, const int *group, int howClusters,
+                           double allMemory, int bits);
 
-        void errorsTWOclusters(double *array, const size_t idCluster1, const size_t idCluster2, const int totalWeight,
-                               const size_t bits = 0) const;
+        void errorsTWOclusters(double *array, int idCluster1, int idCluster2, int totalWeight,
+                               int bits = 0) const;
 
-        size_t
-        updateDim(const size_t idCluster1, const size_t idCluster2, const int totalWeight, const size_t bits = 0);
+        int
+        updateDim(int idCluster1, int idCluster2, int totalWeight, int bits = 0);
     };
 
     /**
@@ -137,7 +101,7 @@ namespace subspaceClustering {
         double dim;
         double *mean;
         double *cov; // row-major order
-        size_t weight;
+        int weight;
         double memory;
         double *eigenvalues;
         double *eigenvectors;
@@ -147,11 +111,13 @@ namespace subspaceClustering {
         friend std::ostream &operator<<(std::ostream &out, const Cluster &c);
 
     public:
-        static size_t N;
+        static int N;
 
-        Cluster(size_t N);
+        explicit Cluster(int N);
 
         Cluster(const Cluster &orig);
+
+        Cluster &operator=(const Cluster &orig);
 
         virtual ~Cluster();
 
@@ -161,26 +127,25 @@ namespace subspaceClustering {
 
         double *getCov() const;
 
+        double *getEigenvalues() const;
+
         int getWeight() const;
 
         double getMemory() const;
 
         void compression(double *point) const;
 
-    private:
-        void changePoint(const double *point, const int weightPoint, double *temp);
+//    private:  // todo: odznacz
+        void changePoint(const double *point, int weightPoint, double *temp);
 
-        Cluster &operator=(const Cluster &orig);
+        double err(double factor) const;
 
-        double err(const double factor) const;
+        double errorFUN(int totalWeight, int bits = 0) const;
 
-        double errorFUN(const int totalWeight, const size_t bits = 0) const;
-
-        bool unassign(const int totalWeight, const double toleranceFactor = 0.02) const;
+        bool unassign(int totalWeight, double toleranceFactor = 0.02) const;
     };
 
     std::ostream &operator<<(std::ostream &out, const Cluster &c);
 } // namespace subspaceClustering
 
-
-#endif //SUMC_SUBSPACECLUSTERING_H_H
+#endif //SOURCE_SUBSPACECLUSTERING_H
