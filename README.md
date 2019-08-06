@@ -39,7 +39,7 @@ In folder [SuMC/demo/](https://github.com/struski2/SuMC/tree/master/demo) I putt
 ```
 ./SuMC -i SuMC/demo/data.txt -k 5 -t 10 -c 0.5835 -o SuMC/demo/res/
 ```
-
+```yaml
 Legend of command line interpreter:
 --input -i:          Input file
 --delimiter -d:      The char used to separate values
@@ -48,4 +48,4 @@ Legend of command line interpreter:
 --iters -t:          Number of iterations
 --bits -b:           Number of bits
 --output -o:         Path to output directory
-
+```
