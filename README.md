@@ -5,7 +5,7 @@ Implementation of method from paper ''[*Lossy compression approach to subspace c
 ## Requirements:
 * cmake (3.8 or higher),
 * gcc, g++ (5.4.0 or higher),
-* lapack and blas libraries.
+* lapack, lapacke and blas libraries.
 
 ## Build
 
