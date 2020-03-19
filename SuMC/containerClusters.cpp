@@ -167,12 +167,12 @@ ContainerClusters::createCluster(const int size[], const double *data, const int
             n_select = (this->tableClusters[i]->dim - floor(this->tableClusters[i]->dim) > 0) ?
                        static_cast<int>(Cluster::N - ceil(this->tableClusters[i]->dim) + 1) :
                        static_cast<int>(Cluster::N - ceil(this->tableClusters[i]->dim));
-            n_select += bound;
+            n_select += bound + 1;
             n_select = (n_select >= Cluster::N) ? Cluster::N : n_select;
         } else {
             // calculate the largest eigenvalues
             n_select = -static_cast<int>(floor(this->tableClusters[i]->dim) + 1);
-            n_select -= bound;
+            n_select -= bound + 1;
             n_select = (n_select <= -Cluster::N) ? -Cluster::N : n_select;
         }
 
@@ -282,12 +282,14 @@ void ContainerClusters::errorsTWOclusters(double *array, const int idCluster1, c
  * @param idCluster1 (<i><b>Cluster &</i></b>) - index of the first cluster
  * @param idCluster2 (<i><b>Cluster &</i></b>) - index of the second cluster
  * @param totalWeight (<i><b>int</i></b>) - the total number of data
+ * @param matrix (<i><b>double*</i></b>) - symmetric matrix
+ * @param eigenvalues (<i><b>double*</i></b>) - eigenvalues of A (vector with size 'dim')
  * @param bits (<i><b>int</i></b>) - number of bits needed to memorize one scalar
  *
  * @return returns 0 or 1, 0 when cluster 'idCluster1' has an integer dimension, 1 for the second case
  */
-int ContainerClusters::updateDim(const int idCluster1, const int idCluster2, const int totalWeight,
-                                 const int bits) {
+int ContainerClusters::updateDim(int idCluster1, int idCluster2, int totalWeight, double *matrix, double *eigenvalues,
+                                 int bits) {
     int ret = 0;
     double ilewsp;
     if (bits == 0)
@@ -329,7 +331,7 @@ int ContainerClusters::updateDim(const int idCluster1, const int idCluster2, con
 
         dim1 = std::round(this->tableClusters[idCluster1]->dim);
         dim2 = std::round(this->tableClusters[idCluster2]->dim);
-        for (int i = -2; i <= 2; ++i) {
+        for (int i = -bound; i <= bound; ++i) {
             if (dim1 + i < 0 || dim2 + i < 0 || dim1 + i > Cluster::N || dim2 + i > Cluster::N) continue;
             temp[0] = (dim1 + i) * this->tableClusters[idCluster1]->weight;
             temp[2] = (dim2 + i) * this->tableClusters[idCluster2]->weight;
@@ -375,6 +377,52 @@ int ContainerClusters::updateDim(const int idCluster1, const int idCluster2, con
                     -std::log2((double) this->tableClusters[idCluster2]->weight / totalWeight) *
                     this->tableClusters[idCluster2]->weight + bits * tempM;
         this->tableClusters[idCluster1]->memory -= this->tableClusters[idCluster2]->memory;
+
+        // update eigenvalues of cluster
+        int n_select, id_, old_dim;
+        if (ret == 1) {
+            id_ = idCluster1;
+            old_dim = (int) dim1;
+        } else {
+            id_ = idCluster2;
+            old_dim = (int) dim2;
+        }
+
+        if (old_dim - bound > this->tableClusters[id_]->dim || this->tableClusters[id_]->dim > old_dim + bound) {
+            double *eigenvec = nullptr;
+            int info;
+
+            if (this->tableClusters[id_]->dim > static_cast<int>(Cluster::N / 2)) {
+                // calculate the smallest eigenvalues
+                n_select = (this->tableClusters[id_]->dim - floor(this->tableClusters[id_]->dim) > 0) ?
+                           static_cast<int>(Cluster::N - ceil(this->tableClusters[id_]->dim) + 1) :
+                           static_cast<int>(Cluster::N - ceil(this->tableClusters[id_]->dim));
+                n_select += bound + 1;
+                n_select = (n_select >= Cluster::N) ? Cluster::N : n_select;
+            } else {
+                // calculate the largest eigenvalues
+                n_select = -static_cast<int>(floor(this->tableClusters[id_]->dim) + 1);
+                n_select -= bound + 1;
+                n_select = (n_select <= -Cluster::N) ? -Cluster::N : n_select;
+            }
+
+            if (n_select != 0) {
+                for (int i = 0; i < Cluster::N * Cluster::N; i++)
+                    matrix[i] = this->tableClusters[id_]->cov[i];
+                try {
+                    info = eigensystem(Cluster::N, n_select, matrix, eigenvalues, eigenvec);
+                    if (info != 0) throw std::runtime_error("Calculating eigenvalues failed!");
+                    if (n_select > 0)
+                        for (int ih = 0; ih < n_select; ++ih)
+                            this->tableClusters[id_]->eigenvalues[ih] = eigenvalues[ih];
+                    else
+                        for (int ih = 0; ih < -n_select; ++ih)
+                            this->tableClusters[id_]->eigenvalues[Cluster::N - 1 - ih] = eigenvalues[-n_select - 1 - ih];
+                } catch (std::exception const &str) {
+                    std::cerr << "Exception: " << str.what() << "\n";
+                }
+            }
+        }
     }
     return ret;
 }
@@ -418,6 +466,7 @@ void ContainerClusters::stepHartigan(int *grups, std::vector<int> &activeCluster
     std::fill(errorsTWOclustersArray, errorsTWOclustersArray + (howClusters * (howClusters - 1)) / 2, -1.0);
 
     while (!T && items < 50) {
+        std::cout << "\r\033[3;37mIteration \033[0;3;30;107m[" << items + 1 << "|50]\033[0;3;37m.\033[0m" << std::flush;
         items++;
         T = true;
         for (m = 0; m < size[0] && !(m == stop && check); m++) {
@@ -458,12 +507,12 @@ void ContainerClusters::stepHartigan(int *grups, std::vector<int> &activeCluster
                         n_select = (this->tableClusters[l]->dim - floor(this->tableClusters[l]->dim) > 0) ?
                                    static_cast<int>(Cluster::N - ceil(this->tableClusters[l]->dim) + 1) :
                                    static_cast<int>(Cluster::N - ceil(this->tableClusters[l]->dim));
-                        n_select += bound;
+                        n_select += bound + 1;
                         n_select = (n_select >= Cluster::N) ? Cluster::N : n_select;
                     } else {
                         // calculate the largest eigenvalues
                         n_select = -static_cast<int>(floor(this->tableClusters[l]->dim) + 1);
-                        n_select -= bound;
+                        n_select -= bound + 1;
                         n_select = (n_select <= -Cluster::N) ? -Cluster::N : n_select;
                     }
 
@@ -499,12 +548,12 @@ void ContainerClusters::stepHartigan(int *grups, std::vector<int> &activeCluster
                 n_select = (copy->tableClusters[l]->dim - floor(copy->tableClusters[l]->dim) > 0) ?
                            static_cast<int>(Cluster::N - ceil(copy->tableClusters[l]->dim) + 1) :
                            static_cast<int>(Cluster::N - ceil(copy->tableClusters[l]->dim));
-                n_select += bound;
+                n_select += bound + 1;
                 n_select = (n_select >= Cluster::N) ? Cluster::N : n_select;
             } else {
                 // calculate the largest eigenvalues
                 n_select = -static_cast<int>(floor(copy->tableClusters[l]->dim) + 1);
-                n_select -= bound;
+                n_select -= bound + 1;
                 n_select = (n_select <= -Cluster::N) ? -Cluster::N : n_select;
             }
 
@@ -545,12 +594,12 @@ void ContainerClusters::stepHartigan(int *grups, std::vector<int> &activeCluster
                         n_select = (copy->tableClusters[*it]->dim - floor(copy->tableClusters[*it]->dim) > 0) ?
                                    static_cast<int>(Cluster::N - ceil(copy->tableClusters[*it]->dim) + 1) :
                                    static_cast<int>(Cluster::N - ceil(copy->tableClusters[*it]->dim));
-                        n_select += bound;
+                        n_select += bound + 1;
                         n_select = (n_select >= Cluster::N) ? Cluster::N : n_select;
                     } else {
                         // calculate the largest eigenvalues
                         n_select = -static_cast<int>(floor(copy->tableClusters[*it]->dim) + 1);
-                        n_select -= bound;
+                        n_select -= bound + 1;
                         n_select = (n_select <= -Cluster::N) ? -Cluster::N : n_select;
                     }
 
@@ -636,19 +685,18 @@ void ContainerClusters::stepHartigan(int *grups, std::vector<int> &activeCluster
                 T = false;
             }
             if (activeClusters.empty()) {
-                std::cout << "Delete all clusters. Small number of points in relation to the dimension of the data.\t";
+                std::cout << "Delete all clusters. Small number of points in relation to the dimension of the data.\n"
+                          << std::flush;
                 T = true;
             }
         }
-
-
     }
     delete copy;
-    delete[] eigenvalues;
     delete[] point;
     delete[] tempVec;
-    delete[] matrix;
     delete[] errorsTWOclustersArray;
+
+    std::cout << " \033[3;92mTraining done :)\033[0m\n" << std::flush;
 
     //update dimensions and memory of clusters
     if (activeClusters.size() == 1) {
@@ -663,12 +711,14 @@ void ContainerClusters::stepHartigan(int *grups, std::vector<int> &activeCluster
             vec.push_back(*it);
         while (vec.size() > 1) {
             it = vec.begin();
-            i = this->updateDim(*it, *(it + 1), size[0], bits);
+            i = this->updateDim(*it, *(it + 1), size[0], matrix, eigenvalues, bits);
             vec.erase(it + i);
         }
         vec.clear();
         vec.resize(0);
     }
+    delete[] matrix;
+    delete[] eigenvalues;
 
     this->error = 0.0;
     if (bits != 0) {
@@ -736,9 +786,12 @@ void ContainerClusters::Hartigan(int *grups, const int size[], const double *dat
 //            TEMPgrups[j] = dis(gen);
             TEMPgrups[j] = rand() % howClusters;
 
+        std::cout << "\033[1;37m------------------------------------\n"
+                     "Random initialization: [" << i + 1 << "|" << iteration << "].\033[0m\n" << std::flush;
+
         temp->stepHartigan(TEMPgrups, *TEMPactiveClusters, size, data, allMemory, bits);
 
-        if (temp->error < this->error) {
+        if (abs(temp->error) < abs(this->error)) {
             *this = *temp;
             for (j = 0; j < size[0]; j++)
                 grups[j] = TEMPgrups[j];

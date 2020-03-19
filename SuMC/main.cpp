@@ -110,8 +110,7 @@ int main(int argc, char **argv) {
 //        exit(1);
 //    }
 
-    std::chrono::high_resolution_clock::time_point start, finish;
-    std::chrono::duration<double> elapsed;
+    std::chrono::system_clock::time_point start, end;
 
     ContainerClusters c;
     int size[2];
@@ -120,14 +119,14 @@ int main(int argc, char **argv) {
     auto *grups = new int[size[0]];
 
     double p_Memory;
+    cout << "Number of samples: " << size[0] << ", dimensionality of data: " << size[1] << endl;
 
     p_Memory = (bits == 0) ? comp_ratio * size[0] * size[1] : comp_ratio * bits * size[0] * size[1];
 
-    start = std::chrono::high_resolution_clock::now();
+    start = std::chrono::system_clock::now();
     c.Hartigan(grups, size, data, k, p_Memory, iters, bits); // calculate time of working this function
-    finish = std::chrono::high_resolution_clock::now();
-    elapsed = finish - start;
-    printf("Elapsed time: %.5G sec\n", elapsed.count());
+    end = std::chrono::system_clock::now();
+    printf("Elapsed time: %.5ld milliseconds\n", std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count());
 
 
     if (c.getSize() != 0) {
@@ -174,7 +173,7 @@ int main(int argc, char **argv) {
             for (int j = 0; j < size[1]; j++)
                 bladSreKwad += pow(abs(data[i * size[1] + j] - c.getContainer()[grups[i]]->getMean()[j]), 2);
 
-        cout << " Cost function: " << c.getError() / size[0] << "\t" << c.getError() / bladSreKwad << "\n";
+        cout << "\033[1;3;31mCost function: " << c.getError() / size[0] << " " << c.getError() / bladSreKwad << "\033[0m\n";
     }
 
     delete[] grups;

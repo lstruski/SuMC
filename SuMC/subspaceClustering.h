@@ -90,7 +90,7 @@ namespace subspaceClustering {
                                int bits = 0) const;
 
         int
-        updateDim(int idCluster1, int idCluster2, int totalWeight, int bits = 0);
+        updateDim(int idCluster1, int idCluster2, int totalWeight, double *matrix, double *eigenvalues, int bits = 0);
     };
 
     /**
@@ -135,7 +135,7 @@ namespace subspaceClustering {
 
         void compression(double *point) const;
 
-//    private:  // todo: odznacz
+    private:
         void changePoint(const double *point, int weightPoint, double *temp);
 
         double err(double factor) const;
